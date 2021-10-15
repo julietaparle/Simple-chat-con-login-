@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chat</title>
+
+
+
+    <style media="screen">
+      .redondo{
+        border-radius: 50px;
+        width: 200px;
+      }
+      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; text-align: center; }
+      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
+      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
+      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
+      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
+      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
+      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
+      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
+      @media (max-width: 600px) {
+        body, #message { margin-top: 0; background: white; box-shadow: none; }
+        body { border-top: 16px solid #ffa100; }
+      }
+      #mensajes {
+        text-align: left;
+        list-style: none;
+        height: 200px;
+        overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div id="message">
+      <img src="female_woman_avatar.png" class="redondo" id="pic">
+      <h2 id="name">Bienvenido</h2>
+      <h1></h1>
+      <p id="email">Chat</p>
+      <a target="_blank" id="login" href="">LOG IN </a>
+            <a target="_blank" id="logout" style="display: none" href="">LOG OUT </a>
+
+            <div id="mensajesContainer" style="display: none;">
+            <ul id="mensajes">
+             </ul>
+            <input type="text" id="mensaje" placeholder="Escribi tu mensaje">
+            <button id="pushMensaje">
+              Enviar mensaje
+              
+            </button>
+            </div>
+    </div>
+    <p id="load"></p>
+
+    
+  <!-- The core Firebase JS SDK is always required and must be listed first. -->
+<!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+  <script src="https://www.gstatic.com/firebasejs/6.2.0/firebase-app.js"></script>
+
+  <!-- Add Firebase products that you want to use -->
+  <script src="https://www.gstatic.com/firebasejs/6.2.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/6.2.0/firebase-database.js"></script>
+
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+<!-- <script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-analytics.js"></script>-->
+
+<script>
+  // Your web app's Firebase configuration
+  var firebaseConfig = {
+   //poner credenciales de firebase
+  };
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  // firebase.analytics();
+
+  let btt = document.getElementById('login');
+  let off = document.getElementById('logout')
+  let name = document.getElementById('name')
+  let pic = document.getElementById('pic')
+  let email = document.getElementById('email')
+  let mensajesContainer = document.getElementById('mensajesContainer')
+  let mensajes = document.getElementById('mensajes')
+  let mensaje = document.getElementById('mensaje')
+  let pushMensaje = document.getElementById('pushMensaje')
+
+
+
+  btt.addEventListener("click", (e)=> {
+    e.preventDefault();
+    //console.log("me estoy lpoguadno")
+    logearConGoogle();
+      })
+
+  pushMensaje.addEventListener("click", (e)=>{
+    e.preventDefault();
+    guardarMensaje();
+  }
+    )
+
+  off.addEventListener("click", (e)=>{
+    e.preventDefault();
+    desloguear()
+  }
+
+    )
+
+  let usuario = {}
+
+  function logearConGoogle() {
+  //  console.log("ouch desde google");
+    const provider = new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithPopup(provider).then(result => {
+      usuario = result;
+      console.log(usuario, "lo que trae mi objeto")
+      lookearUsuario()
+    })
+    .catch(error=>console.log(error.message))
+   
+  }
+
+function desloguear (){
+firebase.auth().signOut().then(function(){
+  console.log('nos desloguamos');
+  deslookearUsuario()  
+}). catch(function(err){
+  console.log(err, "erroooor");
+})
+}
+
+function lookearUsuario(){
+   btt.style.display= "none";
+    off.style.display= "block";
+  name.innerHTML = "Hola, " + usuario.user.displayName;
+  email.innerHTML = usuario.user.email;
+  pic.src = usuario.user.photoURL;
+  mensajesContainer.style.display = 'block';
+  mostrame(); 
+}
+
+function deslookearUsuario(){
+  btt.style.display= "block";
+  off.style.display= "none";
+  name.innerHTML = "Bienvenido";
+  email.innerHTML = "Simple chat";
+  pic.src = "female_woman_avatar.png";
+    mensajesContainer.style.display = 'none ';
+
+}
+
+document.addEventListener('DOMContentLoaded', ()=> {
+  firebase.auth().onAuthStateChanged(user => {
+    if (user){
+    usuario = {'user':user};
+    lookearUsuario();
+  }}
+)})
+
+function guardarMensaje () {
+  const record = {
+    avatar: usuario.user.photoURL,
+    name: usuario.user.displayName,
+    txt: mensaje.value
+  }
+
+  const db = firebase.database();
+  const dbRef = db.ref("mensajes");
+  const newMensaje = dbRef.push();
+  newMensaje.set(record);
+  mensaje.value = '';
+}
+
+function mostrame () {
+  const db = firebase.database();
+  const dbRef = db.ref('mensajes');
+  dbRef.on('child_added', snapshot => {
+    var item = document.createElement('li');
+    item.innerHTML = '<strong>' + snapshot.val().name + ': </strong>' + snapshot.val().txt;
+    mensajes.appendChild(item);
+    //let items = document.querySelectorAll('li');
+    //let last = items[items.lenght-1];
+   // last.scrollIntoView(false);
+
+  });
+
+}
+
+
+
+</script>
+    </script>
+  </body>
+</html>
